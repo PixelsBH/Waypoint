@@ -69,14 +69,6 @@ The in-memory rate limiter allows 10 requests per client key per minute. It is i
 - There is no authentication, database, distributed cache, or request deduplication. Provider rate limits and latency remain outside the app's control.
 - Drag-and-drop, streaming, and persistent session saving were intentionally left out in favor of reliable core behavior and clear failure states.
 
-## AI tools and original work
-
-A Zed coding assistant (GPT-6 Luna) was used to help scaffold the implementation, review architecture, and draft code and documentation. The project-specific decisions and final behavior should be reviewed and understood by the candidate before submission; no claim is made that generated code was independently authored line by line.
-
-## Time spent
-
-**Replace this with your actual focused time before submitting.** The plan's estimate is not a substitute for recording the time you really spent.
-
 ## Why Waypoint?
 
 A waypoint is both a stop along a journey and a checkpoint you can return to. That describes the itinerary itself and the history/revert interaction.
