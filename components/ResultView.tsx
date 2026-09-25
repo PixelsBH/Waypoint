@@ -1,5 +1,5 @@
 import type { AppState } from "@/types/app";
-import type { EditableStopField, Snapshot, TripWithIds } from "@/types/trip";
+import type { TripWithIds } from "@/types/trip";
 import { EmptyState } from "@/components/EmptyState";
 import { ErrorState } from "@/components/ErrorState";
 import { LoadingState } from "@/components/LoadingState";
@@ -7,12 +7,9 @@ import { TripItineraryView } from "@/components/TripItineraryView";
 
 type ResultViewProps = {
   state: AppState;
-  history: Snapshot[];
   onRetry: () => void;
   onMoveStop: (dayId: string, stopId: string, direction: -1 | 1) => void;
   onRemoveStop: (dayId: string, stopId: string) => void;
-  onRestore: (data: TripWithIds) => void;
-  onRestoreField: (stopId: string, field: EditableStopField, value: unknown) => void;
 };
 
 export function ResultView(props: ResultViewProps) {
@@ -24,11 +21,8 @@ export function ResultView(props: ResultViewProps) {
   return (
     <TripItineraryView
       trip={state.data}
-      history={props.history}
       onMoveStop={props.onMoveStop}
       onRemoveStop={props.onRemoveStop}
-      onRestore={props.onRestore}
-      onRestoreField={props.onRestoreField}
     />
   );
 }

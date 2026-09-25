@@ -46,8 +46,8 @@ The provider response is validated against a Zod itinerary schema before it leav
 
 | Variable | Required | Purpose |
 |---|---:|---|
-| `GOOGLE_GENERATIVE_AI_API_KEY` | One provider key required | Primary Gemini 3.8 Flash provider |
-| `GROQ_API_KEY` | Optional | Fallback provider, Llama 3.3 70B Versatile |
+| `GOOGLE_GENERATIVE_AI_API_KEY` | One provider key required | Primary Gemini Flash provider |
+| `GROQ_API_KEY` | Optional | Fallback provider, GPT-OSS 120B on Groq |
 
 The backend uses the Vercel AI SDK's structured `Output.object()` API with the shared Zod schema. It tries configured providers in order (Google, then Groq); if the first provider fails, it attempts the next configured provider. API keys never enter the client bundle. Trip prompts are forwarded to the configured AI provider for generation; avoid entering sensitive personal information.
 

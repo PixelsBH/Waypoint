@@ -2,19 +2,15 @@
 
 import { useEffect, useState } from "react";
 import { DayCard } from "@/components/DayCard";
-import { HistoryPanel } from "@/components/HistoryPanel";
-import type { EditableStopField, Snapshot, TripWithIds } from "@/types/trip";
+import type { TripWithIds } from "@/types/trip";
 
 type TripItineraryViewProps = {
   trip: TripWithIds;
-  history: Snapshot[];
   onMoveStop: (dayId: string, stopId: string, direction: -1 | 1) => void;
   onRemoveStop: (dayId: string, stopId: string) => void;
-  onRestore: (data: TripWithIds) => void;
-  onRestoreField: (stopId: string, field: EditableStopField, value: unknown) => void;
 };
 
-export function TripItineraryView({ trip, history, onMoveStop, onRemoveStop, onRestore, onRestoreField }: TripItineraryViewProps) {
+export function TripItineraryView({ trip, onMoveStop, onRemoveStop }: TripItineraryViewProps) {
   const [activeDayId, setActiveDayId] = useState(trip.days[0]?.id ?? "");
   const activeDay = trip.days.find((day) => day.id === activeDayId) ?? trip.days[0];
   const stopCount = trip.days.reduce((total, day) => total + day.stops.length, 0);
@@ -65,8 +61,6 @@ export function TripItineraryView({ trip, history, onMoveStop, onRemoveStop, onR
           <DayCard day={activeDay} onMoveStop={onMoveStop} onRemoveStop={onRemoveStop} />
         </div>
       )}
-
-      <HistoryPanel current={trip} history={history} onRestore={onRestore} onRestoreField={onRestoreField} />
     </div>
   );
 }

@@ -24,17 +24,44 @@ function safeErrorDetails(error: unknown): Record<string, string | number | bool
   if (!error || typeof error !== "object") return {};
 
   const details: Record<string, string | number | boolean> = {};
-  if ("statusCode" in error && typeof error.statusCode === "number") {
-    details.statusCode = error.statusCode;
+
+  const addErrorFields = (source: object, prefix = "") => {
+    const key = (field: string) => `${prefix}${prefix ? field[0].toUpperCase() + field.slice(1) : field}`;
+    if ("statusCode" in source && typeof source.statusCode === "number") {
+      details[key("statusCode")] = source.statusCode;
+    }
+    if ("isRetryable" in source && typeof source.isRetryable === "boolean") {
+      details[key("isRetryable")] = source.isRetryable;
+    }
+    if ("code" in source && typeof source.code === "string") {
+      details[key("code")] = source.code;
+    }
+    if ("cause" in source && source.cause instanceof Error) {
+      details[key("causeName")] = source.cause.name;
+    }
+    if ("data" in source && source.data && typeof source.data === "object" && "error" in source.data) {
+      const providerError = source.data.error;
+      if (providerError && typeof providerError === "object") {
+        if ("type" in providerError && typeof providerError.type === "string") {
+          details.providerErrorType = providerError.type;
+        }
+        if ("message" in providerError && typeof providerError.message === "string") {
+          details.providerErrorMessage = providerError.message.slice(0, 240);
+        }
+      }
+    }
+  };
+
+  addErrorFields(error);
+  if ("lastError" in error && error.lastError && typeof error.lastError === "object") {
+    details.lastErrorName = errorName(error.lastError);
+    addErrorFields(error.lastError, "lastError");
   }
-  if ("isRetryable" in error && typeof error.isRetryable === "boolean") {
-    details.isRetryable = error.isRetryable;
+  if ("reason" in error && typeof error.reason === "string") {
+    details.retryReason = error.reason;
   }
-  if ("code" in error && typeof error.code === "string") {
-    details.code = error.code;
-  }
-  if ("cause" in error && error.cause instanceof Error) {
-    details.causeName = error.cause.name;
+  if ("errors" in error && Array.isArray(error.errors)) {
+    details.retryCount = error.errors.length;
   }
   return details;
 }
@@ -74,7 +101,7 @@ export async function POST(request: Request) {
       name: "google",
       run: () =>
         generateText({
-          model: google("gemini-3.8-flash"),
+          model: google("gemini-3.5-flash"),
           output: Output.object({ schema: TripItinerarySchema }),
           prompt: buildPrompt(userInput),
         }),
@@ -85,8 +112,9 @@ export async function POST(request: Request) {
       name: "groq",
       run: () =>
         generateText({
-          model: groq("llama-3.3-70b-versatile"),
+          model: groq("openai/gpt-oss-120b"),
           output: Output.object({ schema: TripItinerarySchema }),
+          providerOptions: { groq: { strictJsonSchema: false } },
           prompt: buildPrompt(userInput),
         }),
     });

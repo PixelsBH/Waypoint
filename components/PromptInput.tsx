@@ -2,11 +2,6 @@
 
 import type { FormEvent } from "react";
 
-const examples = [
-  "A relaxed 3-day food and architecture weekend in Lisbon",
-  "Five days in Kyoto in April with temples, gardens, and great coffee",
-  "A family-friendly long weekend in Vancouver without renting a car",
-];
 
 type PromptInputProps = {
   value: string;
@@ -38,7 +33,7 @@ export function PromptInput({ value, onChange, onSubmit, isLoading, onCancel }: 
         id="trip-prompt"
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        placeholder="Try: A relaxed 4-day trip to Copenhagen with design museums, bakeries, and time by the water…"
+        placeholder="Describe where you want to go, how long you have, and what you enjoy…"
         maxLength={2_000}
         rows={4}
         aria-describedby="prompt-hint prompt-count"
@@ -48,13 +43,6 @@ export function PromptInput({ value, onChange, onSubmit, isLoading, onCancel }: 
         <span id="prompt-count">{value.length}/2,000</span>
       </div>
 
-      <div className="example-prompts" aria-label="Example trip prompts">
-        {examples.map((example) => (
-          <button className="example-chip" key={example} onClick={() => onChange(example)} type="button">
-            {example}
-          </button>
-        ))}
-      </div>
 
       <div className="prompt-actions">
         <p className="privacy-note"><span className="privacy-dot" /> Your prompt is sent to the AI provider from our server.</p>

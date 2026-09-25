@@ -5,10 +5,10 @@ import { diffTrips } from "@/lib/diffTrips";
 import type { EditableStopField, Snapshot, TripWithIds } from "@/types/trip";
 
 type HistoryPanelProps = {
-  current: TripWithIds;
+  current: TripWithIds | null;
   history: Snapshot[];
-  onRestore: (data: TripWithIds) => void;
-  onRestoreField: (stopId: string, field: EditableStopField, value: unknown) => void;
+  onRestoreAction: (data: TripWithIds) => void;
+  onRestoreFieldAction: (stopId: string, field: EditableStopField, value: unknown) => void;
 };
 
 function formatValue(value: unknown) {
@@ -20,23 +20,23 @@ function formatTime(timestamp: number) {
   return new Intl.DateTimeFormat(undefined, { hour: "numeric", minute: "2-digit" }).format(timestamp);
 }
 
-export function HistoryPanel({ current, history, onRestore, onRestoreField }: HistoryPanelProps) {
+export function HistoryPanel({ current, history, onRestoreAction, onRestoreFieldAction }: HistoryPanelProps) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const selected = history.find((snapshot) => snapshot.id === selectedId) ?? history.at(-2) ?? history[0];
 
-  if (history.length < 2) {
+  if (history.length === 0) {
     return (
       <section className="history-panel history-empty">
         <div className="history-heading">
           <div><p className="eyebrow">YOUR WAYPOINTS</p><h2>Trip history</h2></div>
-          <span className="history-count">01 version</span>
+          <span className="history-count">0 versions</span>
         </div>
-        <p className="subtle-copy">Your edits will be saved here as you shape this itinerary.</p>
+        <p className="subtle-copy">Your saved versions will appear here.</p>
       </section>
     );
   }
 
-  const difference = selected ? diffTrips(current, selected.data) : null;
+  const difference = selected && current ? diffTrips(current, selected.data) : null;
   const hasChanges = Boolean(difference && (
     difference.fieldChanges.length || difference.moves.length || difference.added.length || difference.removed.length
   ));
@@ -70,7 +70,7 @@ export function HistoryPanel({ current, history, onRestore, onRestoreField }: Hi
                 <p className="eyebrow">COMPARE WITH CURRENT</p>
                 <h3>{selected.label}</h3>
               </div>
-              <button className="button button-outline button-small" onClick={() => onRestore(selected.data)} type="button">Restore version</button>
+              <button className="button button-outline button-small" onClick={() => onRestoreAction(selected.data)} type="button">Restore version</button>
             </div>
             {!hasChanges ? (
               <p className="subtle-copy diff-empty">This version already matches your current itinerary.</p>
@@ -78,11 +78,11 @@ export function HistoryPanel({ current, history, onRestore, onRestoreField }: Hi
               <ul className="change-list">
                 {difference.fieldChanges.map((change) => {
                   const stop = selected.data.days.flatMap((day) => day.stops).find((item) => item.id === change.stopId)
-                    ?? current.days.flatMap((day) => day.stops).find((item) => item.id === change.stopId);
+                    ?? current?.days.flatMap((day) => day.stops).find((item) => item.id === change.stopId);
                   return (
                     <li className="change-item" key={`${change.stopId}-${change.field}`}>
                       <span className="change-description"><strong>{stop?.name ?? "Stop"}</strong> · {change.field}: {formatValue(change.from)} <span aria-hidden="true">→</span> {formatValue(change.to)}</span>
-                      <button className="text-action" onClick={() => onRestoreField(change.stopId, change.field, change.to)} type="button">Revert field</button>
+                      <button className="text-action" onClick={() => onRestoreFieldAction(change.stopId, change.field, change.to)} type="button">Revert field</button>
                     </li>
                   );
                 })}

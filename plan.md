@@ -428,7 +428,7 @@ outage or rate limit isn't currently one of the six handled failure modes.
 ```ts
 const attempts = [
   () => generateObject({ model: google("gemini-2.5-flash"), schema: TripItinerarySchema, prompt }),
-  () => generateObject({ model: groq("llama-3.3-70b-versatile"), schema: TripItinerarySchema, prompt }),
+  () => generateObject({ model: groq("openai/gpt-oss-120b"), schema: TripItinerarySchema, prompt }),
 ];
 
 async function generateWithFallback() {

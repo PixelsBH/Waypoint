@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { HistoryPanel } from "@/components/HistoryPanel";
 import { PromptInput } from "@/components/PromptInput";
 import { ResultView } from "@/components/ResultView";
 import { ApiError, generateTrip } from "@/lib/api";
@@ -103,23 +104,14 @@ export default function HomePage() {
           <span className="brand-mark" aria-hidden="true"><i /><i /><i /></span>
           <span>waypoint<span className="brand-period">.</span></span>
         </a>
-        <div className="header-note"><span className="secure-mark" aria-hidden="true">✳</span> Thoughtful trips, one waypoint at a time</div>
+        <div className="header-note"><span className="secure-mark" aria-hidden="true">✳</span> YOUR PERSONAL TRIP PLANNER</div>
         <a className="header-link" href="#how-it-works">How it works <span aria-hidden="true">↘</span></a>
       </header>
 
-      <section className="hero" id="top">
+      <section className="hero" id="top" aria-label="Waypoint trip planner">
         <div className="hero-copy">
-          <p className="eyebrow"><span className="hero-sparkle" aria-hidden="true">✳</span> YOUR PERSONAL TRIP PLANNER</p>
-          <h1>Less planning.<br /><em>More being there.</em></h1>
-          <p className="hero-description">A good trip is a collection of small, memorable stops. Tell us what you have in mind — we’ll help connect them.</p>
+          <h1>Less planning. <em>More being there.</em></h1>
         </div>
-        <div className="hero-aside" aria-label="Waypoint trip-planning values">
-          <span className="aside-line" />
-          <p>Curious by nature.<br />Considered by design.</p>
-          <span className="aside-coordinate">37° 33′ 59.4″ N<br />126° 58′ 41.2″ E</span>
-        </div>
-        <div className="hero-orbit orbit-large" aria-hidden="true" />
-        <div className="hero-orbit orbit-small" aria-hidden="true" />
       </section>
 
       <section className="planner-grid" aria-label="Trip planner">
@@ -131,17 +123,19 @@ export default function HomePage() {
             isLoading={isLoading}
             onCancel={cancelGeneration}
           />
-          <p className="after-prompt-note"><span aria-hidden="true">↳</span> Your plan is a starting point, not a schedule you have to follow.</p>
+          <HistoryPanel
+            current={appState.status === "success" ? appState.data : null}
+            history={history}
+            onRestoreAction={(data) => commitTrip(data, "Restored an earlier version")}
+            onRestoreFieldAction={restoreField}
+          />
         </div>
         <div className="result-column" aria-live="polite">
           <ResultView
             state={appState}
-            history={history}
             onRetry={() => void handleGenerate(latestPrompt.current)}
             onMoveStop={moveCurrentStop}
             onRemoveStop={removeCurrentStop}
-            onRestore={(data) => commitTrip(data, "Restored an earlier version")}
-            onRestoreField={restoreField}
           />
         </div>
       </section>
