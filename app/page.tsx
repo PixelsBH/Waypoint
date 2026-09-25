@@ -123,12 +123,14 @@ export default function HomePage() {
             isLoading={isLoading}
             onCancel={cancelGeneration}
           />
-          <HistoryPanel
-            current={appState.status === "success" ? appState.data : null}
-            history={history}
-            onRestoreAction={(data) => commitTrip(data, "Restored an earlier version")}
-            onRestoreFieldAction={restoreField}
-          />
+          {history.length > 0 && (
+            <HistoryPanel
+              current={appState.status === "success" ? appState.data : null}
+              history={history}
+              onRestoreAction={(data) => commitTrip(data, "Restored an earlier version")}
+              onRestoreFieldAction={restoreField}
+            />
+          )}
         </div>
         <div className="result-column" aria-live="polite">
           <ResultView
@@ -141,11 +143,17 @@ export default function HomePage() {
       </section>
 
       <section className="how-section" id="how-it-works">
-        <div className="how-heading"><p className="eyebrow">A BETTER WAY TO FIND YOUR WAY</p><h2>Good plans leave room for the unexpected.</h2></div>
+        <div className="how-heading">
+          <div>
+            <p className="eyebrow">WHAT YOUR ITINERARY INCLUDES</p>
+            <h2>A draft you can inspect and change.</h2>
+          </div>
+          <p className="how-intro">Suggested places and timings are a starting point. Check opening hours, reservations and transit with local sources before you go.</p>
+        </div>
         <div className="how-steps">
-          <article><span>01</span><h3>Start with a feeling</h3><p>Share the destination, your pace, and what makes a trip feel like yours.</p></article>
-          <article><span>02</span><h3>Find your rhythm</h3><p>Explore your days as a route of real stops, not a wall of generated text.</p></article>
-          <article><span>03</span><h3>Make it your own</h3><p>Move stops around, remove what doesn’t fit, and revisit earlier versions.</p></article>
+          <article><span>PLAN</span><h3>Stops, grouped by day</h3><p>Each day can include suggested times, categories, visit lengths and notes when available.</p></article>
+          <article><span>EDIT</span><h3>Change the route</h3><p>Move stops up or down, remove ones that don’t fit, and open a stop to see its details.</p></article>
+          <article><span>HISTORY</span><h3>Restore a version</h3><p>Compare earlier edits, restore a full itinerary or revert a changed field. History lasts for this browser session.</p></article>
         </div>
       </section>
 
