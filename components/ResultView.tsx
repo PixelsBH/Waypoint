@@ -21,8 +21,8 @@ export function ResultView(props: ResultViewProps) {
   return (
     <TripItineraryView
       trip={state.data}
-      onMoveStop={props.onMoveStop}
-      onRemoveStop={props.onRemoveStop}
+      onMoveStopAction={props.onMoveStop}
+      onRemoveStopAction={props.onRemoveStop}
     />
   );
 }

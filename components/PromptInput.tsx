@@ -4,16 +4,18 @@ import type { FormEvent } from "react";
 
 type PromptInputProps = {
   value: string;
-  onChange: (value: string) => void;
-  onSubmit: () => void;
+  onChangeAction: (value: string) => void;
+  onSubmitAction: () => void;
   isLoading: boolean;
-  onCancel: () => void;
+  hasGenerated: boolean;
+  onCancelAction: () => void;
 };
 
-export function PromptInput({ value, onChange, onSubmit, isLoading, onCancel }: PromptInputProps) {
+export function PromptInput({ value, onChangeAction, onSubmitAction, isLoading, hasGenerated, onCancelAction }: PromptInputProps) {
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    onSubmit();
+    if (isLoading) return;
+    onSubmitAction();
   }
 
   return (
@@ -26,7 +28,8 @@ export function PromptInput({ value, onChange, onSubmit, isLoading, onCancel }: 
       <textarea
         id="trip-prompt"
         value={value}
-        onChange={(event) => onChange(event.target.value)}
+        disabled={isLoading}
+        onChange={(event) => onChangeAction(event.target.value)}
         placeholder="Describe where you want to go, how long you have, and what you enjoy…"
         maxLength={2_000}
         rows={3}
@@ -40,10 +43,10 @@ export function PromptInput({ value, onChange, onSubmit, isLoading, onCancel }: 
       <div className="prompt-actions">
         <p className="privacy-note"><span className="privacy-dot" /> Your prompt is sent to the AI provider from our server.</p>
         <div className="submit-actions">
-          {isLoading && <button className="button button-quiet" onClick={onCancel} type="button">Cancel</button>}
-          <button className="button button-primary" disabled={!value.trim()} type="submit">
-            {isLoading ? "Replace request" : "Plan my trip"}
-            <span aria-hidden="true">↗</span>
+          {isLoading && <button className="button button-quiet" onClick={onCancelAction} type="button">Cancel</button>}
+          <button className="button button-primary" disabled={isLoading || !value.trim()} type="submit">
+            {isLoading ? "Generating…" : hasGenerated ? "Update trip" : "Plan my trip"}
+            {!isLoading && <span aria-hidden="true">↗</span>}
           </button>
         </div>
       </div>

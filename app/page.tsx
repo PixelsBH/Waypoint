@@ -29,6 +29,7 @@ export default function HomePage() {
     }
 
     const id = ++requestId.current;
+    setPrompt("");
     activeController.current?.abort();
     const controller = new AbortController();
     activeController.current = controller;
@@ -118,10 +119,11 @@ export default function HomePage() {
         <div className="planner-column">
           <PromptInput
             value={prompt}
-            onChange={updatePrompt}
-            onSubmit={() => void handleGenerate(prompt)}
+            onChangeAction={updatePrompt}
+            onSubmitAction={() => void handleGenerate(prompt)}
             isLoading={isLoading}
-            onCancel={cancelGeneration}
+            hasGenerated={history.length > 0}
+            onCancelAction={cancelGeneration}
           />
           {history.length > 0 && (
             <HistoryPanel

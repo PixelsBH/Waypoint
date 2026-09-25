@@ -23,6 +23,8 @@ function formatTime(timestamp: number) {
 export function HistoryPanel({ current, history, onRestoreAction, onRestoreFieldAction }: HistoryPanelProps) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const selected = history.find((snapshot) => snapshot.id === selectedId) ?? history.at(-2) ?? history[0];
+  const currentSnapshotId = history.at(-1)?.id;
+  const selectedIsCurrent = selected?.id === currentSnapshotId;
 
   if (history.length === 0) {
     return (
@@ -49,18 +51,28 @@ export function HistoryPanel({ current, history, onRestoreAction, onRestoreField
       </div>
       <div className="history-layout">
         <div className="history-list" aria-label="Saved itinerary versions">
-          {[...history].reverse().map((snapshot, index) => (
-            <button
-              key={snapshot.id}
-              className={`history-version${selected?.id === snapshot.id ? " is-selected" : ""}`}
-              onClick={() => setSelectedId(snapshot.id)}
-              type="button"
-              aria-pressed={selected?.id === snapshot.id}
-            >
-              <span className="version-dot" />
-              <span className="version-copy"><strong>{index === 0 ? "Current version" : snapshot.label}</strong><small>{formatTime(snapshot.timestamp)}</small></span>
-            </button>
-          ))}
+          {[...history].reverse().map((snapshot, index) => {
+            const versionNumber = history.length - index;
+            const isCurrentVersion = snapshot.id === currentSnapshotId;
+
+            return (
+              <button
+                key={snapshot.id}
+                className={`history-version${selected?.id === snapshot.id ? " is-selected" : ""}`}
+                onClick={() => setSelectedId(snapshot.id)}
+                type="button"
+                aria-pressed={selected?.id === snapshot.id}
+                aria-label={`Version ${versionNumber}${isCurrentVersion ? ", current version" : ""}: ${snapshot.label}`}
+              >
+                <span className="version-dot" />
+                <span className="version-copy">
+                  <strong>Version {versionNumber}{isCurrentVersion ? " · Current" : ""}</strong>
+                  <small className="version-label">{snapshot.label}</small>
+                  <small>{formatTime(snapshot.timestamp)}</small>
+                </span>
+              </button>
+            );
+          })}
         </div>
 
         {selected && difference && (
@@ -70,7 +82,9 @@ export function HistoryPanel({ current, history, onRestoreAction, onRestoreField
                 <p className="eyebrow">COMPARE WITH CURRENT</p>
                 <h3>{selected.label}</h3>
               </div>
-              <button className="button button-outline button-small" onClick={() => onRestoreAction(selected.data)} type="button">Restore version</button>
+              {!selectedIsCurrent && (
+                <button className="button button-outline button-small" onClick={() => onRestoreAction(selected.data)} type="button">Restore version</button>
+              )}
             </div>
             {!hasChanges ? (
               <p className="subtle-copy diff-empty">This version already matches your current itinerary.</p>

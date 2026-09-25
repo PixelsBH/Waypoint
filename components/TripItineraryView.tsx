@@ -6,11 +6,11 @@ import type { TripWithIds } from "@/types/trip";
 
 type TripItineraryViewProps = {
   trip: TripWithIds;
-  onMoveStop: (dayId: string, stopId: string, direction: -1 | 1) => void;
-  onRemoveStop: (dayId: string, stopId: string) => void;
+  onMoveStopAction: (dayId: string, stopId: string, direction: -1 | 1) => void;
+  onRemoveStopAction: (dayId: string, stopId: string) => void;
 };
 
-export function TripItineraryView({ trip, onMoveStop, onRemoveStop }: TripItineraryViewProps) {
+export function TripItineraryView({ trip, onMoveStopAction, onRemoveStopAction }: TripItineraryViewProps) {
   const [activeDayId, setActiveDayId] = useState(trip.days[0]?.id ?? "");
   const activeDay = trip.days.find((day) => day.id === activeDayId) ?? trip.days[0];
   const stopCount = trip.days.reduce((total, day) => total + day.stops.length, 0);
@@ -58,7 +58,7 @@ export function TripItineraryView({ trip, onMoveStop, onRemoveStop }: TripItiner
 
       {activeDay && (
         <div role="tabpanel" id={`panel-${activeDay.id}`} aria-labelledby={`tab-${activeDay.id}`}>
-          <DayCard day={activeDay} onMoveStop={onMoveStop} onRemoveStop={onRemoveStop} />
+          <DayCard day={activeDay} destination={trip.destination} onMoveStop={onMoveStopAction} onRemoveStop={onRemoveStopAction} />
         </div>
       )}
     </div>
