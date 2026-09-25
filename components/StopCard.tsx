@@ -1,6 +1,7 @@
 "use client";
 
 import type { StopWithId } from "@/types/trip";
+import type { PlacePreview } from "@/types/place";
 
 const categoryNames: Record<NonNullable<StopWithId["category"]>, string> = {
   food: "Food & drink",
@@ -14,13 +15,14 @@ const categoryNames: Record<NonNullable<StopWithId["category"]>, string> = {
 type StopCardProps = {
   stop: StopWithId;
   destination: string;
+  place?: PlacePreview;
   index: number;
   count: number;
   onMoveAction: (direction: -1 | 1) => void;
   onRemoveAction: () => void;
 };
 
-export function StopCard({ stop, destination, index, count, onMoveAction, onRemoveAction }: StopCardProps) {
+export function StopCard({ stop, destination, place, index, count, onMoveAction, onRemoveAction }: StopCardProps) {
   return (
     <article className="stop-card">
       <div className="stop-index" aria-hidden="true">{String(index + 1).padStart(2, "0")}</div>
@@ -34,6 +36,24 @@ export function StopCard({ stop, destination, index, count, onMoveAction, onRemo
             </div>
             <h3>{stop.name}</h3>
             {stop.description && <p className="stop-preview">{stop.description}</p>}
+            {place && (
+              <div className="stop-place-preview">
+                {place.photo && <img className="stop-place-image" src={place.photo.url} alt={`Preview of ${stop.name}`} loading="lazy" />}
+                <div className="stop-place-meta">
+                  {place.address && <span>{place.address}</span>}
+                  <span className="stop-coordinates">{place.coordinates.lat.toFixed(5)}, {place.coordinates.lng.toFixed(5)}</span>
+                  <span className="place-attribution">© OpenStreetMap contributors</span>
+                  {place.photo && (
+                    <span className="photo-attribution">
+                      Photo by {place.photo.creator} · <a href={place.photo.sourceUrl} target="_blank" rel="noopener noreferrer">source</a>
+                      {place.photo.licenseUrl ? (
+                        <> · <a href={place.photo.licenseUrl} target="_blank" rel="noopener noreferrer">{place.photo.licenseName}</a></>
+                      ) : ` · ${place.photo.licenseName}`}
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
           <div className="stop-controls" aria-label={`Actions for ${stop.name}`}>
             <button className="icon-button" onClick={() => onMoveAction(-1)} disabled={index === 0} type="button" aria-label={`Move ${stop.name} up`} title="Move up">↑</button>
@@ -43,12 +63,12 @@ export function StopCard({ stop, destination, index, count, onMoveAction, onRemo
         </div>
         <a
           className="text-action map-action"
-          href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${stop.name}, ${destination}`)}`}
+          href={place?.openStreetMapUrl || `https://www.openstreetmap.org/search?query=${encodeURIComponent(`${stop.name}, ${destination}`)}`}
           target="_blank"
           rel="noopener noreferrer"
-          aria-label={`Search for ${stop.name} in Google Maps`}
+          aria-label={`${place ? "View" : "Search for"} ${stop.name} in OpenStreetMap`}
         >
-          Search in Maps <span aria-hidden="true">↗</span>
+          {place ? "View in OpenStreetMap" : "Search OpenStreetMap"} <span aria-hidden="true">↗</span>
         </a>
       </div>
     </article>

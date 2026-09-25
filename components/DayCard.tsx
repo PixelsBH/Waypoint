@@ -1,14 +1,16 @@
 import type { DayWithId } from "@/types/trip";
+import type { PlacePreview } from "@/types/place";
 import { StopCard } from "@/components/StopCard";
 
 type DayCardProps = {
   day: DayWithId;
   destination: string;
+  placesByStop: Record<string, PlacePreview | null>;
   onMoveStop: (dayId: string, stopId: string, direction: -1 | 1) => void;
   onRemoveStop: (dayId: string, stopId: string) => void;
 };
 
-export function DayCard({ day, destination, onMoveStop, onRemoveStop }: DayCardProps) {
+export function DayCard({ day, destination, placesByStop, onMoveStop, onRemoveStop }: DayCardProps) {
   return (
     <section className="day-panel" aria-labelledby={`day-title-${day.id}`}>
       <div className="day-panel-heading">
@@ -24,6 +26,7 @@ export function DayCard({ day, destination, onMoveStop, onRemoveStop }: DayCardP
             key={stop.id}
             stop={stop}
             destination={destination}
+            place={placesByStop[stop.id] ?? undefined}
             index={index}
             count={day.stops.length}
             onMoveAction={(direction) => onMoveStop(day.id, stop.id, direction)}

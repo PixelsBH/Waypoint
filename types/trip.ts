@@ -2,6 +2,7 @@ import { z } from "zod";
 
 // IDs are intentionally absent from the model-facing schema. Stable identity is
 // attached by our server after the itinerary has passed validation.
+export const MAX_STOPS_PER_DAY = 5;
 export const StopSchema = z.object({
   name: z.string().trim().min(1),
   time: z.string().optional(),
@@ -13,7 +14,7 @@ export const StopSchema = z.object({
 export const DaySchema = z.object({
   dayNumber: z.number().int().positive(),
   title: z.string().optional(),
-  stops: z.array(StopSchema).min(1),
+  stops: z.array(StopSchema).min(1).max(MAX_STOPS_PER_DAY),
 });
 
 export const TripItinerarySchema = z.object({
@@ -25,7 +26,7 @@ export const TripItinerarySchema = z.object({
 export const StopWithIdSchema = StopSchema.extend({ id: z.string().min(1) });
 export const DayWithIdSchema = DaySchema.extend({
   id: z.string().min(1),
-  stops: z.array(StopWithIdSchema).min(1),
+  stops: z.array(StopWithIdSchema).min(1).max(MAX_STOPS_PER_DAY),
 });
 export const TripWithIdsSchema = TripItinerarySchema.extend({
   days: z.array(DayWithIdSchema).min(1),

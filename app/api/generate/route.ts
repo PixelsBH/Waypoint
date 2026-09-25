@@ -2,6 +2,7 @@ import { generateText, Output } from "ai";
 import { google } from "@ai-sdk/google";
 import { groq } from "@ai-sdk/groq";
 import { buildPrompt } from "@/lib/buildPrompt";
+import { GroqTripItinerarySchema, normalizeGroqItinerary } from "@/lib/groqItinerary";
 import { logEvent } from "@/lib/logger";
 import { InMemoryRateLimiter } from "@/lib/rateLimiter";
 import { TripItinerarySchema, type TripItinerary } from "@/types/trip";
@@ -47,6 +48,9 @@ function safeErrorDetails(error: unknown): Record<string, string | number | bool
         }
         if ("message" in providerError && typeof providerError.message === "string") {
           details.providerErrorMessage = providerError.message.slice(0, 240);
+        }
+        if ("code" in providerError && typeof providerError.code === "string") {
+          details.providerErrorCode = providerError.code.slice(0, 80);
         }
       }
     }
@@ -110,13 +114,15 @@ export async function POST(request: Request) {
   if (process.env.GROQ_API_KEY) {
     attempts.push({
       name: "groq",
-      run: () =>
-        generateText({
+      run: async () => {
+        const { output } = await generateText({
           model: groq("openai/gpt-oss-120b"),
-          output: Output.object({ schema: TripItinerarySchema }),
-          providerOptions: { groq: { strictJsonSchema: false } },
+          output: Output.object({ schema: GroqTripItinerarySchema }),
+          providerOptions: { groq: { strictJsonSchema: true } },
           prompt: buildPrompt(userInput),
-        }),
+        });
+        return { output: output ? normalizeGroqItinerary(output) : undefined };
+      },
     });
   }
 

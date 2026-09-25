@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
+import { buildPrompt } from "@/lib/buildPrompt";
 import { diffTrips } from "@/lib/diffTrips";
 import { moveStop, removeStop } from "@/lib/itinerary";
 import { validateResult } from "@/lib/validateResult";
 import { InMemoryRateLimiter } from "@/lib/rateLimiter";
+import { DaySchema, MAX_STOPS_PER_DAY, TripWithIdsSchema } from "@/types/trip";
 import type { TripWithIds } from "@/types/trip";
 
 const trip: TripWithIds = {
@@ -36,6 +38,26 @@ describe("itinerary validation", () => {
 
   it("rejects an empty itinerary", () => {
     expect(validateResult({ destination: "", days: [] }).success).toBe(false);
+  });
+
+  it("allows at most five stops per day", () => {
+    const stops = Array.from({ length: MAX_STOPS_PER_DAY }, (_, index) => ({ name: `Stop ${index + 1}` }));
+    expect(DaySchema.safeParse({ dayNumber: 1, stops }).success).toBe(true);
+    expect(DaySchema.safeParse({ dayNumber: 1, stops: [...stops, { name: "One more stop" }] }).success).toBe(false);
+    const tooManyStops = {
+      ...trip,
+      days: [{ ...trip.days[0], stops: Array.from({ length: MAX_STOPS_PER_DAY + 1 }, (_, index) => ({ id: `stop-${index}`, name: `Stop ${index}` })) }],
+    };
+    expect(TripWithIdsSchema.safeParse(tooManyStops).success).toBe(false);
+  });
+
+  it("keeps venue names separate from meal and activity context in the generation prompt", () => {
+    const prompt = buildPrompt("A weekend in Lisbon");
+    expect(prompt).toContain(`no more than ${MAX_STOPS_PER_DAY} stops on any day`);
+    expect(prompt).toContain("one valid JSON object matching the structured output schema");
+    expect(prompt).toContain("description, which is the stop's subheading");
+    expect(prompt).toContain('name "Nicolau Lisboa"');
+    expect(prompt).toContain('name "A Brasileira"');
   });
 });
 

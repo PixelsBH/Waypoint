@@ -366,3 +366,29 @@ h1, h2, h3, p { margin-top: 0; }
 .prompt-card textarea, .history-diff, .day-tab, .history-version { border-radius: 10px; }
 .button, .icon-button { border-radius: 8px; }
 .category-tag, .empty-tags span, .history-count { border-radius: 999px; }
+
+.route-map-panel { overflow: hidden; border: 1px solid #34453a; border-radius: 14px; background: #18231d; }
+.trip-map { height: clamp(380px, 48vw, 560px); overflow: hidden; background: #202923; }
+.trip-map-canvas { width: 100%; height: 100%; }
+.leaflet-stop-marker { border: 0; background: transparent; }
+.map-stop-marker { display: grid; min-width: 34px; height: 30px; place-items: center; padding: 0 4px; border: 2px solid #f4f6f1; border-radius: 999px; background: #426c4c; box-shadow: 0 2px 8px rgba(0, 0, 0, .4); color: #fff; font: 700 9px var(--sans); }
+.map-stop-info { display: grid; gap: 5px; max-width: 220px; color: #28332b; font: 12px/1.45 var(--sans); }
+.map-stop-info strong { font-size: 13px; }
+.map-stop-info span { color: #637168; font-size: 11px; }
+.map-stop-info a { color: #3f754d; font-weight: 600; }
+.leaflet-container { font-family: var(--sans); }
+.leaflet-control-attribution { font-size: 10px !important; }
+.place-attribution { color: #a2b1a6; font-size: 9px; }
+.stop-place-preview { display: flex; align-items: center; gap: 10px; max-width: 430px; margin-top: 9px; padding: 8px; border: 1px solid #2d3931; border-radius: 9px; background: #1c2720; }
+.stop-place-image { width: 112px; height: 76px; flex: 0 0 auto; border-radius: 6px; object-fit: cover; background: #27342b; }
+.stop-place-meta { display: grid; gap: 4px; min-width: 0; color: #a7b3aa; font-size: 10px; line-height: 1.45; overflow-wrap: anywhere; }
+.stop-coordinates { color: #7f9084; font-variant-numeric: tabular-nums; }
+.photo-attribution { color: #94a99a; font-size: 9px; line-height: 1.5; }
+.photo-attribution a { color: #a6c9ac; text-decoration: underline; text-underline-offset: 2px; }
+.photo-attribution a:hover { color: #d0e0d2; }
+
+@media (max-width: 680px) {
+  .trip-map { height: min(68vh, 520px); min-height: 360px; }
+  .stop-place-preview { align-items: flex-start; }
+  .stop-place-image { width: 94px; height: 72px; }
+}
