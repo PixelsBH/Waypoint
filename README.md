@@ -38,9 +38,52 @@ Provider keys are read only by the Next.js route handler. Do not rename them to 
 
 ## Use it
 
-Describe a destination, trip length, pace, and interests in the prompt box. Choose **Plan my trip** to create an itinerary. Open day tabs to explore the route, expand stops for details, move stops with the arrow controls, or remove a stop. Waypoint looks up each suggested place, adds matching coordinates and an available Commons photo to its stop details, and plots located stops on an OpenStreetMap map. Each day has between one and five stops. Place names are kept separate from meal/activity context, which appears in the stop description. Each edit creates a session history checkpoint; select an earlier version to compare it with the current plan, restore the whole version, or revert an individual changed field.
+Describe a destination, trip length, pace, and interests in the prompt box. Choose **Plan my trip** to create an itinerary. Open day tabs to explore the route, expand stops for details, move stops with the arrow controls, or remove a stop. Waypoint looks up each suggested place, adds matching coordinates and an available Commons photo to its stop details, and plots located stops on an OpenStreetMap map. Each day has between one and six stops. Place names are kept separate from meal/activity context, which appears in the stop description. Each edit creates a session history checkpoint; select an earlier version to compare it with the current plan, restore the whole version, or revert an individual changed field.
 
 The provider response is validated against a Zod itinerary schema before it leaves the backend and checked again before it enters React state. Provider or validation failures return an explicit error state with a retry path. The browser aborts requests after 45 seconds, and a request ID guard prevents an older response from replacing a newer one.
+
+## Architecture
+
+The Next.js page owns the trip prompt, itinerary state, and in-memory edit history. UI components render the itinerary and map; shared library code handles API calls, itinerary edits, history, prompts, and validation. Server route handlers keep provider keys on the server and integrate with the AI and place lookup services.
+
+```mermaid
+flowchart LR
+  subgraph Browser[Browser · Next.js and React]
+    Page[app/page.tsx\nTrip state and session history]
+    UI[components\nPrompt, itinerary, stops, history]
+    Hook[usePlaceEnrichment]
+    Map[TripMapPanel and Leaflet map]
+    ClientLib[lib/api and shared client logic]
+    Page --> UI
+    Page --> Hook
+    Page --> Map
+    UI --> ClientLib
+  end
+
+  subgraph Server[Next.js route handlers]
+    Generate[/POST /api/generate/]
+    Enrich[/POST /api/enrich/]
+    GenLib[Prompt building, provider fallback,\nrate limiting and result validation]
+    PlaceLib[Geocode queue, caching,\nrate limiting and photo licensing]
+    Schema[Shared Zod itinerary and place schemas]
+    Generate --> GenLib
+    Generate --> Schema
+    Enrich --> PlaceLib
+    Enrich --> Schema
+  end
+
+  ClientLib -->|prompt and optional current itinerary| Generate
+  Hook -->|destination and stops| Enrich
+  GenLib -->|structured itinerary| Google[Google Gemini]
+  GenLib -->|fallback when configured| Groq[Groq]
+  PlaceLib -->|coordinates| Nominatim[Nominatim geocoder]
+  PlaceLib -->|licensed preview image| Commons[Wikimedia Commons]
+  Map -->|map tiles| OSM[OpenStreetMap tile service]
+  Generate -->|validated itinerary| ClientLib
+  Enrich -->|coordinates and photo metadata| Hook
+```
+
+Trip edits and history stay in browser memory for the current session. Place lookups run through the server so requests can be queued and cached; Leaflet requests map tiles directly from the configured tile service.
 
 ## Environment variables
 
