@@ -41,7 +41,8 @@ describe("itinerary validation", () => {
     expect(validateResult({ destination: "", days: [] }).success).toBe(false);
   });
 
-  it("allows at most five stops per day", () => {
+  it("allows at most six stops per day", () => {
+    expect(MAX_STOPS_PER_DAY).toBe(6);
     const stops = Array.from({ length: MAX_STOPS_PER_DAY }, (_, index) => ({ name: `Stop ${index + 1}` }));
     expect(DaySchema.safeParse({ dayNumber: 1, stops }).success).toBe(true);
     expect(DaySchema.safeParse({ dayNumber: 1, stops: [...stops, { name: "One more stop" }] }).success).toBe(false);
@@ -139,6 +140,32 @@ describe("itinerary interactions", () => {
       days: [{ ...trip.days[0], stops: [trip.days[0].stops[0]] }],
     };
     expect(removeStop(oneStopTrip, "day-1", "stop-1")).toBe(oneStopTrip);
+  });
+
+  it("reports prompt-updated stop, trip, and day fields in history diffs", () => {
+    const revised = applyTripUpdate(trip, {
+      operations: [
+        { action: "replace_stop", stopId: "stop-1", stop: { name: "Tea House", category: "food" } },
+        { action: "set_destination", destination: "Porto" },
+        { action: "set_summary", summary: "A new itinerary summary." },
+        { action: "set_day_title", dayNumber: 1, title: "Riverside" },
+      ],
+    });
+
+    const diff = diffTrips(revised, trip);
+    expect(diff.fieldChanges).toContainEqual({
+      stopId: "stop-1",
+      field: "name",
+      from: "Tea House",
+      to: "Coffee",
+    });
+    expect(diff.tripFieldChanges).toEqual([
+      { field: "destination", from: "Porto", to: "Lisbon" },
+      { field: "summary", from: "A new itinerary summary.", to: "A gentle city break." },
+    ]);
+    expect(diff.dayFieldChanges).toEqual([
+      { dayId: "day-1", dayNumber: 1, field: "title", from: "Riverside", to: "Old town" },
+    ]);
   });
 
   it("reports field edits and reorder locations by stable stop ID", () => {

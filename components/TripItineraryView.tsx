@@ -30,24 +30,27 @@ function ItineraryContent({ trip, placesByStop, loadingByStop, mapStops, onMoveS
     <div className="itinerary-view">
       <section className="trip-overview">
         <div className="overview-copy">
-          <p className="eyebrow"><span className="live-dot" /> YOUR ITINERARY</p>
+          <p className="eyebrow"><span className="live-dot" aria-hidden="true" /> YOUR ITINERARY</p>
           <h2>{trip.destination}</h2>
           {trip.summary && <p className="trip-summary">{trip.summary}</p>}
         </div>
         <div className="trip-stats" aria-label="Itinerary overview">
           <div><strong>{trip.days.length}</strong><span>{trip.days.length === 1 ? "day" : "days"}</span></div>
           <div><strong>{stopCount}</strong><span>{stopCount === 1 ? "waypoint" : "waypoints"}</span></div>
+          <div><strong>{mapStops.length}</strong><span>{mapStops.length === 1 ? "pin" : "pins"}</span></div>
         </div>
       </section>
+
+      {mapStops.length > 0 && (
+        <section className="route-map-panel" aria-label="Interactive map of itinerary stops">
+          <TripMap stops={mapStops} />
+        </section>
+      )}
 
       <div className="itinerary-section-heading">
         <div><p className="eyebrow">THE ROUTE</p><h2>One day at a time</h2></div>
         <span className="edit-note">Made to be rearranged <span aria-hidden="true">↘</span></span>
       </div>
-
-      <section className="route-map-panel" aria-label="Interactive OpenStreetMap of itinerary stops">
-        <TripMap stops={mapStops} />
-      </section>
 
       <div className="day-tabs" role="tablist" aria-label="Itinerary days">
         {trip.days.map((day) => (

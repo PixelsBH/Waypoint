@@ -9,6 +9,8 @@ type FieldChange = {
 type StopMove = { stopId: string; from: [number, number]; to: [number, number] };
 
 type StopLocation = { dayIndex: number; pos: number; stop: StopWithId };
+type TripFieldChange = { field: "destination" | "summary"; from: string | undefined; to: string | undefined };
+type DayFieldChange = { dayId: string; dayNumber: number; field: "title" | "dayNumber"; from: string | number | undefined; to: string | number | undefined };
 
 function indexStopsById(trip: TripWithIds) {
   const map = new Map<string, StopLocation>();
@@ -25,6 +27,26 @@ export function diffTrips(oldTrip: TripWithIds, newTrip: TripWithIds) {
   const moves: StopMove[] = [];
   const added: string[] = [];
   const removed: string[] = [];
+  const tripFieldChanges: TripFieldChange[] = [];
+  const dayFieldChanges: DayFieldChange[] = [];
+
+  ( ["destination", "summary"] as const).forEach((field) => {
+    if (oldTrip[field] !== newTrip[field]) {
+      tripFieldChanges.push({ field, from: oldTrip[field], to: newTrip[field] });
+    }
+  });
+
+  const oldDaysById = new Map(oldTrip.days.map((day) => [day.id, day]));
+  for (const day of newTrip.days) {
+    const oldDay = oldDaysById.get(day.id);
+    if (!oldDay) continue;
+    if (oldDay.title !== day.title) {
+      dayFieldChanges.push({ dayId: day.id, dayNumber: day.dayNumber, field: "title", from: oldDay.title, to: day.title });
+    }
+    if (oldDay.dayNumber !== day.dayNumber) {
+      dayFieldChanges.push({ dayId: day.id, dayNumber: day.dayNumber, field: "dayNumber", from: oldDay.dayNumber, to: day.dayNumber });
+    }
+  }
 
   for (const [id, location] of newIndex) {
     const old = oldIndex.get(id);
@@ -48,7 +70,7 @@ export function diffTrips(oldTrip: TripWithIds, newTrip: TripWithIds) {
     if (!newIndex.has(id)) removed.push(id);
   }
 
-  return { fieldChanges, moves, added, removed };
+  return { tripFieldChanges, dayFieldChanges, fieldChanges, moves, added, removed };
 }
 
 export function applyStopField(

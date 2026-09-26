@@ -2,7 +2,7 @@ import { z } from "zod";
 
 // IDs are intentionally absent from the model-facing schema. Stable identity is
 // attached by our server after the itinerary has passed validation.
-export const MAX_STOPS_PER_DAY = 5;
+export const MAX_STOPS_PER_DAY = 6;
 export const StopSchema = z.object({
   name: z.string().trim().min(1),
   time: z.string().optional(),

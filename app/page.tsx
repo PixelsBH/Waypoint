@@ -22,6 +22,14 @@ export default function HomePage() {
   const requestId = useRef(0);
   const activeController = useRef<AbortController | null>(null);
   const latestPrompt = useRef("");
+  const workspaceRef = useRef<HTMLElement | null>(null);
+
+  function scrollToItinerary() {
+    requestAnimationFrame(() => {
+      const behavior = window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth";
+      workspaceRef.current?.scrollIntoView({ behavior, block: "start" });
+    });
+  }
 
   async function handleGenerate(input = latestPrompt.current) {
     const userInput = input.trim();
@@ -39,6 +47,7 @@ export default function HomePage() {
     activeController.current = controller;
     const timeout = window.setTimeout(() => controller.abort(), 45_000);
     setAppState({ status: "loading" });
+    scrollToItinerary();
 
     try {
       const raw = await generateTrip(userInput, controller.signal, currentTrip);
@@ -117,6 +126,7 @@ export default function HomePage() {
     } satisfies TripMapStop] : [];
   })) ?? [], [mapTrip, placesByStop]);
   const loadingStopCount = Object.values(loadingByStop).filter(Boolean).length;
+  const showWorkspace = isLoading || appState.status === "success" || appState.status === "error" || history.length > 0;
 
   return (
     <main className="site-shell">
@@ -131,44 +141,46 @@ export default function HomePage() {
 
       <section className="hero" id="top" aria-label="Waypoint trip planner">
         <div className="hero-copy">
+          <p className="eyebrow">AI TRIP PLANNER</p>
           <h1>Less planning. <em>More being there.</em></h1>
+          <p className="hero-sub">Describe your trip in plain words. Waypoint turns it into a day-by-day route with places, photos and a map you can rearrange.</p>
         </div>
+        <PromptInput
+          value={prompt}
+          onChangeAction={updatePrompt}
+          onSubmitAction={(input) => void handleGenerate(input ?? prompt)}
+          isLoading={isLoading}
+          hasGenerated={history.length > 0}
+          onCancelAction={cancelGeneration}
+        />
       </section>
 
-      <section className="planner-grid" aria-label="Trip planner">
-        <div className="planner-column">
-          <PromptInput
-            value={prompt}
-            onChangeAction={updatePrompt}
-            onSubmitAction={() => void handleGenerate(prompt)}
-            isLoading={isLoading}
-            hasGenerated={history.length > 0}
-            onCancelAction={cancelGeneration}
-          />
-          {history.length > 0 && (
-            <>
+      {showWorkspace && (
+        <section ref={workspaceRef} className="workspace-grid" aria-label="Trip workspace">
+          <div className="workspace-main" aria-live="polite">
+            <ResultView
+              state={appState}
+              onRetry={() => void handleGenerate(latestPrompt.current)}
+              onMoveStop={moveCurrentStop}
+              onRemoveStop={removeCurrentStop}
+              placesByStop={placesByStop}
+              loadingByStop={loadingByStop}
+              mapStops={mapStops}
+            />
+          </div>
+          <aside className="workspace-side">
+            <TripMapPanel stops={mapStops} loadingCount={loadingStopCount} />
+            {history.length > 0 && (
               <HistoryPanel
                 current={appState.status === "success" ? appState.data : null}
                 history={history}
                 onRestoreAction={(data) => commitTrip(data, "Restored an earlier version")}
                 onRestoreFieldAction={restoreField}
               />
-              <TripMapPanel stops={mapStops} loadingCount={loadingStopCount} />
-            </>
-          )}
-        </div>
-        <div className="result-column" aria-live="polite">
-          <ResultView
-            state={appState}
-            onRetry={() => void handleGenerate(latestPrompt.current)}
-            onMoveStop={moveCurrentStop}
-            onRemoveStop={removeCurrentStop}
-            placesByStop={placesByStop}
-            loadingByStop={loadingByStop}
-            mapStops={mapStops}
-          />
-        </div>
-      </section>
+            )}
+          </aside>
+        </section>
+      )}
 
       <section className="how-section" id="how-it-works">
         <div className="how-heading">

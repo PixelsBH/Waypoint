@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { PlaceEnrichmentResponseSchema } from "@/types/place";
+import { MAX_STOPS_PER_ENRICH_REQUEST, PlaceEnrichmentResponseSchema } from "@/types/place";
 import type { PlacePreview, StopPlaceLookup } from "@/types/place";
 import type { TripWithIds } from "@/types/trip";
 
@@ -30,41 +30,44 @@ export function usePlaceEnrichment(trip: TripWithIds | null) {
     });
 
     void (async () => {
-      try {
-        const response = await fetch("/api/enrich", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            destination: trip?.destination,
-            stops: pending.map(({ id, name }) => ({ id, name })),
-          }),
-          signal: AbortSignal.timeout(55_000),
-        });
-        if (!response.ok) throw new Error("Place lookup failed");
-
-        const result = PlaceEnrichmentResponseSchema.safeParse(await response.json());
-        if (!result.success) throw new Error("Place lookup returned invalid data");
-
-        const updates = Object.fromEntries(pending
-          .filter((target) => requestedQueries.current.get(target.id) === target.query)
-          .map((target) => [target.id, {
-            query: target.query,
-            place: result.data.places[target.id] ?? null,
-          }]));
-        setLookups((current) => ({ ...current, ...updates }));
-      } catch {
-        const updates = Object.fromEntries(pending
-          .filter((target) => requestedQueries.current.get(target.id) === target.query)
-          .map((target) => [target.id, { query: target.query, place: null }]));
-        setLookups((current) => ({ ...current, ...updates }));
-      } finally {
-        setLoadingQueries((current) => {
-          const next = { ...current };
-          pending.forEach((target) => {
-            if (next[target.id] === target.query) delete next[target.id];
+      for (let start = 0; start < pending.length; start += MAX_STOPS_PER_ENRICH_REQUEST) {
+        const batch = pending.slice(start, start + MAX_STOPS_PER_ENRICH_REQUEST);
+        try {
+          const response = await fetch("/api/enrich", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              destination: trip?.destination,
+              stops: batch.map(({ id, name }) => ({ id, name })),
+            }),
+            signal: AbortSignal.timeout(55_000),
           });
-          return next;
-        });
+          if (!response.ok) throw new Error("Place lookup failed");
+
+          const result = PlaceEnrichmentResponseSchema.safeParse(await response.json());
+          if (!result.success) throw new Error("Place lookup returned invalid data");
+
+          const updates = Object.fromEntries(batch
+            .filter((target) => requestedQueries.current.get(target.id) === target.query)
+            .map((target) => [target.id, {
+              query: target.query,
+              place: result.data.places[target.id] ?? null,
+            }]));
+          setLookups((current) => ({ ...current, ...updates }));
+        } catch {
+          const updates = Object.fromEntries(batch
+            .filter((target) => requestedQueries.current.get(target.id) === target.query)
+            .map((target) => [target.id, { query: target.query, place: null }]));
+          setLookups((current) => ({ ...current, ...updates }));
+        } finally {
+          setLoadingQueries((current) => {
+            const next = { ...current };
+            batch.forEach((target) => {
+              if (next[target.id] === target.query) delete next[target.id];
+            });
+            return next;
+          });
+        }
       }
     })();
   }, [trip?.destination, targets]);

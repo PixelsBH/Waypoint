@@ -1,10 +1,10 @@
 import { z } from "zod";
 import { InMemoryRateLimiter } from "@/lib/rateLimiter";
+import { MAX_STOPS_PER_ENRICH_REQUEST } from "@/types/place";
 import type { PlaceCoordinates, PlacePhoto, PlacePreview } from "@/types/place";
 
 export const maxDuration = 60;
 
-const MAX_STOPS_PER_REQUEST = 20;
 const NOMINATIM_REQUEST_INTERVAL_MS = 1_100;
 const nominatimLimiter = new InMemoryRateLimiter(5, 60_000);
 const requestSchema = z.object({
@@ -12,7 +12,7 @@ const requestSchema = z.object({
   stops: z.array(z.object({
     id: z.string().trim().min(1).max(100),
     name: z.string().trim().min(1).max(200),
-  })).min(1).max(MAX_STOPS_PER_REQUEST),
+  })).min(1).max(MAX_STOPS_PER_ENRICH_REQUEST),
 });
 const nominatimResponseSchema = z.array(z.object({
   lat: z.string(),

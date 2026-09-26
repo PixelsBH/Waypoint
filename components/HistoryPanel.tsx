@@ -28,7 +28,7 @@ export function HistoryPanel({ current, history, onRestoreAction, onRestoreField
 
   if (history.length === 0) {
     return (
-      <section className="history-panel history-empty">
+      <section className="side-card history-panel history-empty">
         <div className="history-heading">
           <div><p className="eyebrow">YOUR WAYPOINTS</p><h2>Trip history</h2></div>
           <span className="history-count">0 versions</span>
@@ -40,11 +40,12 @@ export function HistoryPanel({ current, history, onRestoreAction, onRestoreField
 
   const difference = selected && current ? diffTrips(current, selected.data) : null;
   const hasChanges = Boolean(difference && (
-    difference.fieldChanges.length || difference.moves.length || difference.added.length || difference.removed.length
+    difference.tripFieldChanges.length || difference.dayFieldChanges.length || difference.fieldChanges.length
+    || difference.moves.length || difference.added.length || difference.removed.length
   ));
 
   return (
-    <section className="history-panel">
+    <section className="side-card history-panel">
       <div className="history-heading">
         <div><p className="eyebrow">A CHECKPOINT TO RETURN TO</p><h2>Trip history</h2></div>
         <span className="history-count">{history.length} versions</span>
@@ -90,6 +91,16 @@ export function HistoryPanel({ current, history, onRestoreAction, onRestoreField
               <p className="subtle-copy diff-empty">This version already matches your current itinerary.</p>
             ) : (
               <ul className="change-list">
+                {difference.tripFieldChanges.map((change) => (
+                  <li className="change-item change-note" key={`trip-${change.field}`}>
+                    <span>Trip {change.field}: current {formatValue(change.from)}; selected {formatValue(change.to)}.</span>
+                  </li>
+                ))}
+                {difference.dayFieldChanges.map((change) => (
+                  <li className="change-item change-note" key={`${change.dayId}-${change.field}`}>
+                    <span>Day {change.dayNumber} {change.field}: current {formatValue(change.from)}; selected {formatValue(change.to)}.</span>
+                  </li>
+                ))}
                 {difference.fieldChanges.map((change) => {
                   const stop = selected.data.days.flatMap((day) => day.stops).find((item) => item.id === change.stopId)
                     ?? current?.days.flatMap((day) => day.stops).find((item) => item.id === change.stopId);

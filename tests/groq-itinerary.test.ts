@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { normalizeGroqItinerary, GroqTripItinerarySchema } from "@/lib/groqItinerary";
 import { normalizeGroqTripUpdate, GroqTripUpdateSchema } from "@/lib/groqUpdate";
+import { MAX_STOPS_PER_DAY } from "@/types/trip";
 
 describe("Groq itinerary output", () => {
   it("normalizes nullable strict-schema fields to optional itinerary fields", () => {
@@ -81,7 +82,7 @@ describe("Groq itinerary output", () => {
       days: [{
         dayNumber: 1,
         title: null,
-        stops: Array.from({ length: 6 }, (_, index) => ({
+        stops: Array.from({ length: MAX_STOPS_PER_DAY + 1 }, (_, index) => ({
           name: `Stop ${index + 1}`,
           time: null,
           description: null,

@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+export const MAX_STOPS_PER_ENRICH_REQUEST = 30;
+
 export const PlaceCoordinatesSchema = z.object({
   lat: z.number().min(-90).max(90),
   lng: z.number().min(-180).max(180),

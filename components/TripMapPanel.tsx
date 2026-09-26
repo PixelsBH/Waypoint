@@ -8,18 +8,18 @@ type TripMapPanelProps = {
 
 export function TripMapPanel({ stops, loadingCount }: TripMapPanelProps) {
   return (
-    <section className="trip-map-panel" aria-label="Trip map of located stops">
-      <div className="trip-map-heading">
+    <section className="side-card trip-map-panel" aria-label="Trip map of located stops">
+      <div className="side-card-heading">
         <div>
           <p className="eyebrow">STOP LOCATIONS</p>
           <h2>Trip map</h2>
         </div>
-        <span className="trip-map-count">{stops.length} {stops.length === 1 ? "pin" : "pins"}</span>
+        <span className="count-pill">{stops.length} {stops.length === 1 ? "pin" : "pins"}</span>
       </div>
       {loadingCount > 0 && (
-        <p className="trip-map-loading" role="status">
+        <p className="side-card-status" role="status">
           <span className="place-loading-spinner" aria-hidden="true" />
-          Fetching locations for {loadingCount} {loadingCount === 1 ? "stop" : "stops"}…
+          Locating {loadingCount} {loadingCount === 1 ? "stop" : "stops"}…
         </p>
       )}
       {stops.length > 0 ? (
@@ -27,7 +27,7 @@ export function TripMapPanel({ stops, loadingCount }: TripMapPanelProps) {
           <TripMap stops={stops} compact />
         </div>
       ) : loadingCount === 0 ? (
-        <p className="subtle-copy trip-map-empty">Stop pins will appear here as their details are found.</p>
+        <p className="subtle-copy side-card-empty">Pins land here as each stop is located. Generate a trip above to begin.</p>
       ) : null}
     </section>
   );

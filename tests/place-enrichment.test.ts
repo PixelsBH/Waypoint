@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { POST } from "@/app/api/enrich/route";
+import { MAX_STOPS_PER_ENRICH_REQUEST } from "@/types/place";
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -14,6 +15,27 @@ describe("place enrichment endpoint", () => {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ destination: "Lisbon", stops: [] }),
+    }));
+
+    expect(response.status).toBe(400);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("rejects requests above the 30-stop limit before calling external services", async () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+
+    expect(MAX_STOPS_PER_ENRICH_REQUEST).toBe(30);
+    const response = await POST(new Request("http://localhost/api/enrich", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        destination: "Lisbon",
+        stops: Array.from({ length: MAX_STOPS_PER_ENRICH_REQUEST + 1 }, (_, index) => ({
+          id: `stop-${index + 1}`,
+          name: `Place ${index + 1}`,
+        })),
+      }),
     }));
 
     expect(response.status).toBe(400);

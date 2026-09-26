@@ -36,7 +36,7 @@ export function DayCard({ day, destination, placesByStop, loadingByStop, onMoveS
           />
         ))}
       </div>
-      <p className="reorder-hint"><span aria-hidden="true">↕</span> Use the arrows to make this route your own.</p>
+      <p className="reorder-hint"><span aria-hidden="true">↕</span> Use the arrows to make this day your own.</p>
     </section>
   );
 }
