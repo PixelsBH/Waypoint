@@ -1,3 +1,5 @@
+import type { TripWithIds } from "@/types/trip";
+
 export type ApiErrorKind =
   | "parse"
   | "shape"
@@ -35,14 +37,14 @@ function errorKind(value: unknown): ApiErrorKind {
   }
 }
 
-export async function generateTrip(userInput: string, signal: AbortSignal): Promise<unknown> {
+export async function generateTrip(userInput: string, signal: AbortSignal, currentTrip?: TripWithIds): Promise<unknown> {
   let response: Response;
 
   try {
     response = await fetch("/api/generate", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ prompt: userInput }),
+      body: JSON.stringify({ prompt: userInput, ...(currentTrip ? { currentTrip } : {}) }),
       signal,
     });
   } catch (error) {

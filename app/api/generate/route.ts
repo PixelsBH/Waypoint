@@ -1,11 +1,13 @@
 import { generateText, Output } from "ai";
 import { google } from "@ai-sdk/google";
 import { groq } from "@ai-sdk/groq";
-import { buildPrompt } from "@/lib/buildPrompt";
+import { buildPrompt, buildUpdatePrompt } from "@/lib/buildPrompt";
 import { GroqTripItinerarySchema, normalizeGroqItinerary } from "@/lib/groqItinerary";
+import { GroqTripUpdateSchema, normalizeGroqTripUpdate } from "@/lib/groqUpdate";
+import { applyTripUpdate, TripUpdateSchema } from "@/lib/updateTrip";
 import { logEvent } from "@/lib/logger";
 import { InMemoryRateLimiter } from "@/lib/rateLimiter";
-import { TripItinerarySchema, type TripItinerary } from "@/types/trip";
+import { TripItinerarySchema, TripWithIdsSchema, type TripItinerary, type TripWithIds } from "@/types/trip";
 
 export const maxDuration = 60;
 
@@ -14,8 +16,19 @@ const MAX_INPUT_LENGTH = 2_000;
 
 type ProviderAttempt = {
   name: string;
-  run: () => Promise<{ output: TripItinerary | undefined }>;
+  run: () => Promise<{ output: TripWithIds | undefined }>;
 };
+
+function attachIds(itinerary: TripItinerary): TripWithIds {
+  return {
+    ...itinerary,
+    days: itinerary.days.map((day) => ({
+      ...day,
+      id: crypto.randomUUID(),
+      stops: day.stops.map((stop) => ({ ...stop, id: crypto.randomUUID() })),
+    })),
+  };
+}
 
 function errorName(error: unknown) {
   return error instanceof Error ? error.name : "UnknownError";
@@ -84,6 +97,15 @@ export async function POST(request: Request) {
     body && typeof body === "object" && "prompt" in body && typeof body.prompt === "string"
       ? body.prompt.trim()
       : "";
+  const hasCurrentTrip = Boolean(body && typeof body === "object" && "currentTrip" in body);
+  let currentTrip: TripWithIds | undefined;
+  if (hasCurrentTrip && body && typeof body === "object" && "currentTrip" in body) {
+    const parsedTrip = TripWithIdsSchema.safeParse(body.currentTrip);
+    if (!parsedTrip.success) {
+      return Response.json({ ok: false, error: "invalid_request" }, { status: 400 });
+    }
+    currentTrip = parsedTrip.data;
+  }
 
   if (!userInput) {
     return Response.json({ ok: false, error: "empty_input" }, { status: 400 });
@@ -103,25 +125,50 @@ export async function POST(request: Request) {
   if (process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
     attempts.push({
       name: "google",
-      run: () =>
-        generateText({
+      run: async () => {
+        if (currentTrip) {
+          const { output } = await generateText({
+            model: google("gemini-3.5-flash"),
+            output: Output.object({ schema: TripUpdateSchema }),
+            prompt: buildUpdatePrompt(userInput, currentTrip),
+          });
+          return { output: output ? applyTripUpdate(currentTrip, output) : undefined };
+        }
+
+        const { output } = await generateText({
           model: google("gemini-3.5-flash"),
           output: Output.object({ schema: TripItinerarySchema }),
           prompt: buildPrompt(userInput),
-        }),
+        });
+        return { output: output ? attachIds(output) : undefined };
+      },
     });
   }
   if (process.env.GROQ_API_KEY) {
     attempts.push({
       name: "groq",
       run: async () => {
+        if (currentTrip) {
+          const { output } = await generateText({
+            model: groq("openai/gpt-oss-120b"),
+            output: Output.object({ schema: GroqTripUpdateSchema }),
+            providerOptions: { groq: { strictJsonSchema: true } },
+            prompt: buildUpdatePrompt(userInput, currentTrip),
+          });
+          return {
+            output: output
+              ? applyTripUpdate(currentTrip, normalizeGroqTripUpdate(output))
+              : undefined,
+          };
+        }
+
         const { output } = await generateText({
           model: groq("openai/gpt-oss-120b"),
           output: Output.object({ schema: GroqTripItinerarySchema }),
           providerOptions: { groq: { strictJsonSchema: true } },
           prompt: buildPrompt(userInput),
         });
-        return { output: output ? normalizeGroqItinerary(output) : undefined };
+        return { output: output ? attachIds(normalizeGroqItinerary(output)) : undefined };
       },
     });
   }
@@ -140,21 +187,13 @@ export async function POST(request: Request) {
         return Response.json({ ok: false, error: "empty_result" }, { status: 502 });
       }
 
-      const data = {
-        ...output,
-        days: output.days.map((day) => ({
-          ...day,
-          id: crypto.randomUUID(),
-          stops: day.stops.map((stop) => ({ ...stop, id: crypto.randomUUID() })),
-        })),
-      };
-
-      logEvent("generation.succeeded", {
+      logEvent(currentTrip ? "generation.update_succeeded" : "generation.succeeded", {
         provider: attempt.name,
         durationMs: Date.now() - startedAt,
-        dayCount: data.days.length,
+        dayCount: output.days.length,
+        operation: currentTrip ? "update" : "create",
       });
-      return Response.json({ ok: true, data });
+      return Response.json({ ok: true, data: output });
     } catch (error) {
       lastError = error;
       logEvent("generation.provider_failed", {

@@ -31,6 +31,7 @@ export default function HomePage() {
       return;
     }
 
+    const currentTrip = appState.status === "success" ? appState.data : history.at(-1)?.data;
     const id = ++requestId.current;
     setPrompt("");
     activeController.current?.abort();
@@ -40,7 +41,7 @@ export default function HomePage() {
     setAppState({ status: "loading" });
 
     try {
-      const raw = await generateTrip(userInput, controller.signal);
+      const raw = await generateTrip(userInput, controller.signal, currentTrip);
       if (id !== requestId.current) return;
 
       const result = validateResult(raw);
@@ -50,7 +51,10 @@ export default function HomePage() {
       }
 
       setAppState({ status: "success", data: result.data });
-      setHistory((current) => appendSnapshot(current, createSnapshot(result.data, "Generated a new itinerary")));
+      setHistory((current) => appendSnapshot(
+        current,
+        createSnapshot(result.data, currentTrip ? "Updated the itinerary" : "Generated a new itinerary"),
+      ));
     } catch (error) {
       if (id !== requestId.current) return;
 

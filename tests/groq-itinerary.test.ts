@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { normalizeGroqItinerary, GroqTripItinerarySchema } from "@/lib/groqItinerary";
+import { normalizeGroqTripUpdate, GroqTripUpdateSchema } from "@/lib/groqUpdate";
 
 describe("Groq itinerary output", () => {
   it("normalizes nullable strict-schema fields to optional itinerary fields", () => {
@@ -32,6 +33,43 @@ describe("Groq itinerary output", () => {
           category: "sight",
           durationMinutes: undefined,
         }],
+      }],
+    });
+  });
+
+  it("normalizes strict update operations and nullable stop fields", () => {
+    const generated = GroqTripUpdateSchema.parse({
+      operations: [{
+        action: "add_stop",
+        stopId: null,
+        dayNumber: 2,
+        position: null,
+        stop: {
+          name: "National Coach Museum",
+          time: null,
+          description: "Explore the collection.",
+          category: "sight",
+          durationMinutes: null,
+        },
+        stops: null,
+        title: null,
+        destination: null,
+        summary: null,
+      }],
+    });
+
+    expect(normalizeGroqTripUpdate(generated)).toEqual({
+      operations: [{
+        action: "add_stop",
+        dayNumber: 2,
+        position: undefined,
+        stop: {
+          name: "National Coach Museum",
+          time: undefined,
+          description: "Explore the collection.",
+          category: "sight",
+          durationMinutes: undefined,
+        },
       }],
     });
   });

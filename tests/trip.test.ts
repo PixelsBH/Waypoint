@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { buildPrompt } from "@/lib/buildPrompt";
+import { buildPrompt, buildUpdatePrompt } from "@/lib/buildPrompt";
+import { applyTripUpdate } from "@/lib/updateTrip";
 import { diffTrips } from "@/lib/diffTrips";
 import { moveStop, removeStop } from "@/lib/itinerary";
 import { validateResult } from "@/lib/validateResult";
@@ -58,6 +59,66 @@ describe("itinerary validation", () => {
     expect(prompt).toContain("description, which is the stop's subheading");
     expect(prompt).toContain('name "Nicolau Lisboa"');
     expect(prompt).toContain('name "A Brasileira"');
+  });
+
+  it("builds update prompts from the current trip and asks for minimal operations", () => {
+    const prompt = buildUpdatePrompt("Add a museum to day 2", trip);
+    expect(prompt).toContain("Do not return a newly generated itinerary");
+    expect(prompt).toContain("Make the smallest set of operations");
+    expect(prompt).toContain('"destination":"Lisbon"');
+    expect(prompt).toContain('"id":"stop-1"');
+    expect(prompt).toContain("Add a museum to day 2");
+  });
+});
+
+describe("targeted itinerary updates", () => {
+  const twoDayTrip: TripWithIds = {
+    ...trip,
+    days: [
+      trip.days[0],
+      {
+        id: "day-2",
+        dayNumber: 2,
+        title: "Riverside",
+        stops: [{ id: "stop-3", name: "Belém Tower", category: "sight" }],
+      },
+    ],
+  };
+
+  it("adds only the requested stop and preserves all existing stop and day IDs", () => {
+    const updated = applyTripUpdate(twoDayTrip, {
+      operations: [{
+        action: "add_stop",
+        dayNumber: 2,
+        stop: { name: "National Coach Museum", category: "sight" },
+      }],
+    });
+
+    expect(updated.destination).toBe("Lisbon");
+    expect(updated.days.map((day) => day.id)).toEqual(["day-1", "day-2"]);
+    expect(updated.days[0].stops).toEqual(twoDayTrip.days[0].stops);
+    expect(updated.days[1].stops.slice(0, 1)).toEqual(twoDayTrip.days[1].stops);
+    expect(updated.days[1].stops[1]).toMatchObject({ name: "National Coach Museum", category: "sight" });
+    expect(updated.days[1].stops[1].id).not.toBe("stop-3");
+  });
+
+  it("replaces only the targeted stop while retaining its stable ID", () => {
+    const updated = applyTripUpdate(twoDayTrip, {
+      operations: [{
+        action: "replace_stop",
+        stopId: "stop-3",
+        stop: { name: "Jerónimos Monastery", category: "sight" },
+      }],
+    });
+
+    expect(updated.days[0].stops).toEqual(twoDayTrip.days[0].stops);
+    expect(updated.days[1].stops).toEqual([{ id: "stop-3", name: "Jerónimos Monastery", category: "sight" }]);
+  });
+
+  it("rejects an operation that references a missing stop", () => {
+    expect(() => applyTripUpdate(twoDayTrip, {
+      operations: [{ action: "remove_stop", stopId: "missing-stop" }],
+    })).toThrow("Unknown stop ID");
   });
 });
 
