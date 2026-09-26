@@ -1,6 +1,7 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
+import { TripMapPanel } from "@/components/TripMapPanel";
 import { HistoryPanel } from "@/components/HistoryPanel";
 import { PromptInput } from "@/components/PromptInput";
 import { ResultView } from "@/components/ResultView";
@@ -9,6 +10,8 @@ import { applyStopField } from "@/lib/diffTrips";
 import { appendSnapshot, createSnapshot } from "@/lib/history";
 import { moveStop, removeStop } from "@/lib/itinerary";
 import { validateResult } from "@/lib/validateResult";
+import { usePlaceEnrichment } from "@/hooks/usePlaceEnrichment";
+import type { TripMapStop } from "@/types/place";
 import type { AppState, ErrorKind } from "@/types/app";
 import type { EditableStopField, Snapshot, TripWithIds } from "@/types/trip";
 
@@ -97,6 +100,19 @@ export default function HomePage() {
   }
 
   const isLoading = appState.status === "loading";
+  const mapTrip = appState.status === "success" ? appState.data : history.at(-1)?.data ?? null;
+  const { placesByStop, loadingByStop } = usePlaceEnrichment(mapTrip);
+  const mapStops = useMemo(() => mapTrip?.days.flatMap((day) => day.stops.flatMap((stop, index) => {
+    const place = placesByStop[stop.id];
+    return place ? [{
+      id: stop.id,
+      name: stop.name,
+      dayNumber: day.dayNumber,
+      stopNumber: index + 1,
+      place,
+    } satisfies TripMapStop] : [];
+  })) ?? [], [mapTrip, placesByStop]);
+  const loadingStopCount = Object.values(loadingByStop).filter(Boolean).length;
 
   return (
     <main className="site-shell">
@@ -126,12 +142,15 @@ export default function HomePage() {
             onCancelAction={cancelGeneration}
           />
           {history.length > 0 && (
-            <HistoryPanel
-              current={appState.status === "success" ? appState.data : null}
-              history={history}
-              onRestoreAction={(data) => commitTrip(data, "Restored an earlier version")}
-              onRestoreFieldAction={restoreField}
-            />
+            <>
+              <HistoryPanel
+                current={appState.status === "success" ? appState.data : null}
+                history={history}
+                onRestoreAction={(data) => commitTrip(data, "Restored an earlier version")}
+                onRestoreFieldAction={restoreField}
+              />
+              <TripMapPanel stops={mapStops} loadingCount={loadingStopCount} />
+            </>
           )}
         </div>
         <div className="result-column" aria-live="polite">
@@ -140,6 +159,9 @@ export default function HomePage() {
             onRetry={() => void handleGenerate(latestPrompt.current)}
             onMoveStop={moveCurrentStop}
             onRemoveStop={removeCurrentStop}
+            placesByStop={placesByStop}
+            loadingByStop={loadingByStop}
+            mapStops={mapStops}
           />
         </div>
       </section>

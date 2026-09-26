@@ -6,11 +6,12 @@ type DayCardProps = {
   day: DayWithId;
   destination: string;
   placesByStop: Record<string, PlacePreview | null>;
+  loadingByStop: Record<string, boolean>;
   onMoveStop: (dayId: string, stopId: string, direction: -1 | 1) => void;
   onRemoveStop: (dayId: string, stopId: string) => void;
 };
 
-export function DayCard({ day, destination, placesByStop, onMoveStop, onRemoveStop }: DayCardProps) {
+export function DayCard({ day, destination, placesByStop, loadingByStop, onMoveStop, onRemoveStop }: DayCardProps) {
   return (
     <section className="day-panel" aria-labelledby={`day-title-${day.id}`}>
       <div className="day-panel-heading">
@@ -27,6 +28,7 @@ export function DayCard({ day, destination, placesByStop, onMoveStop, onRemoveSt
             stop={stop}
             destination={destination}
             place={placesByStop[stop.id] ?? undefined}
+            isLoadingPlace={loadingByStop[stop.id] ?? false}
             index={index}
             count={day.stops.length}
             onMoveAction={(direction) => onMoveStop(day.id, stop.id, direction)}

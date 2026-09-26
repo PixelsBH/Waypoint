@@ -1,97 +1,26 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { DayCard } from "@/components/DayCard";
 import { TripMap } from "@/components/TripMap";
-import { PlaceEnrichmentResponseSchema } from "@/types/place";
-import type { PlacePreview, StopPlaceLookup, TripMapStop } from "@/types/place";
+import type { PlacePreview, TripMapStop } from "@/types/place";
 import type { TripWithIds } from "@/types/trip";
 
 type TripItineraryViewProps = {
   trip: TripWithIds;
+  placesByStop: Record<string, PlacePreview | null>;
+  loadingByStop: Record<string, boolean>;
+  mapStops: TripMapStop[];
   onMoveStopAction: (dayId: string, stopId: string, direction: -1 | 1) => void;
   onRemoveStopAction: (dayId: string, stopId: string) => void;
 };
 
-type ItineraryContentProps = TripItineraryViewProps & {
-  placesByStop: Record<string, PlacePreview | null>;
-};
+type ItineraryContentProps = TripItineraryViewProps;
 
-function PlaceEnrichedItinerary(props: TripItineraryViewProps) {
-  const targets = useMemo(
-    () => props.trip.days.flatMap((day) => day.stops.map((stop) => ({
-      id: stop.id,
-      name: stop.name,
-      query: `${stop.name}, ${props.trip.destination}`,
-    }))),
-    [props.trip.days, props.trip.destination],
-  );
-  const [lookups, setLookups] = useState<Record<string, StopPlaceLookup>>({});
-  const requestedQueries = useRef(new Map<string, string>());
-
-  useEffect(() => {
-    const pending = targets.filter((target) => requestedQueries.current.get(target.id) !== target.query);
-    if (pending.length === 0) return;
-
-    pending.forEach((target) => requestedQueries.current.set(target.id, target.query));
-
-    void (async () => {
-      try {
-        const response = await fetch("/api/enrich", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            destination: props.trip.destination,
-            stops: pending.map(({ id, name }) => ({ id, name })),
-          }),
-          signal: AbortSignal.timeout(55_000),
-        });
-        if (!response.ok) throw new Error("Place lookup failed");
-
-        const result = PlaceEnrichmentResponseSchema.safeParse(await response.json());
-        if (!result.success) throw new Error("Place lookup returned invalid data");
-
-        const updates = Object.fromEntries(pending
-          .filter((target) => requestedQueries.current.get(target.id) === target.query)
-          .map((target) => [target.id, {
-            query: target.query,
-            place: result.data.places[target.id] ?? null,
-          }]));
-        setLookups((current) => ({ ...current, ...updates }));
-      } catch {
-        const updates = Object.fromEntries(pending
-          .filter((target) => requestedQueries.current.get(target.id) === target.query)
-          .map((target) => [target.id, { query: target.query, place: null }]));
-        setLookups((current) => ({ ...current, ...updates }));
-      }
-    })();
-  }, [props.trip.destination, targets]);
-
-  const placesByStop = useMemo(() => {
-    const result: Record<string, PlacePreview | null> = {};
-    targets.forEach((target) => {
-      const lookup = lookups[target.id];
-      if (lookup?.query === target.query) result[target.id] = lookup.place;
-    });
-    return result;
-  }, [lookups, targets]);
-  return <ItineraryContent {...props} placesByStop={placesByStop} />;
-}
-
-function ItineraryContent({ trip, onMoveStopAction, onRemoveStopAction, placesByStop }: ItineraryContentProps) {
+function ItineraryContent({ trip, placesByStop, loadingByStop, mapStops, onMoveStopAction, onRemoveStopAction }: ItineraryContentProps) {
   const [activeDayId, setActiveDayId] = useState(trip.days[0]?.id ?? "");
   const activeDay = trip.days.find((day) => day.id === activeDayId) ?? trip.days[0];
   const stopCount = trip.days.reduce((total, day) => total + day.stops.length, 0);
-  const mapStops = useMemo(() => trip.days.flatMap((day) => day.stops.flatMap((stop, index) => {
-    const place = placesByStop[stop.id];
-    return place ? [{
-      id: stop.id,
-      name: stop.name,
-      dayNumber: day.dayNumber,
-      stopNumber: index + 1,
-      place,
-    } satisfies TripMapStop] : [];
-  })), [placesByStop, trip.days]);
 
   useEffect(() => {
     if (!trip.days.some((day) => day.id === activeDayId)) setActiveDayId(trip.days[0]?.id ?? "");
@@ -144,6 +73,7 @@ function ItineraryContent({ trip, onMoveStopAction, onRemoveStopAction, placesBy
             day={activeDay}
             destination={trip.destination}
             placesByStop={placesByStop}
+            loadingByStop={loadingByStop}
             onMoveStop={onMoveStopAction}
             onRemoveStop={onRemoveStopAction}
           />
@@ -154,5 +84,5 @@ function ItineraryContent({ trip, onMoveStopAction, onRemoveStopAction, placesBy
 }
 
 export function TripItineraryView(props: TripItineraryViewProps) {
-  return <PlaceEnrichedItinerary {...props} />;
+  return <ItineraryContent {...props} />;
 }

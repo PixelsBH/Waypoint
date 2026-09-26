@@ -1,4 +1,5 @@
 import type { AppState } from "@/types/app";
+import type { PlacePreview, TripMapStop } from "@/types/place";
 import type { TripWithIds } from "@/types/trip";
 import { EmptyState } from "@/components/EmptyState";
 import { ErrorState } from "@/components/ErrorState";
@@ -10,6 +11,9 @@ type ResultViewProps = {
   onRetry: () => void;
   onMoveStop: (dayId: string, stopId: string, direction: -1 | 1) => void;
   onRemoveStop: (dayId: string, stopId: string) => void;
+  placesByStop: Record<string, PlacePreview | null>;
+  loadingByStop: Record<string, boolean>;
+  mapStops: TripMapStop[];
 };
 
 export function ResultView(props: ResultViewProps) {
@@ -21,6 +25,9 @@ export function ResultView(props: ResultViewProps) {
   return (
     <TripItineraryView
       trip={state.data}
+      placesByStop={props.placesByStop}
+      loadingByStop={props.loadingByStop}
+      mapStops={props.mapStops}
       onMoveStopAction={props.onMoveStop}
       onRemoveStopAction={props.onRemoveStop}
     />

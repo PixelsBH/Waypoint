@@ -6,9 +6,10 @@ import type { TripMapStop } from "@/types/place";
 
 type TripMapProps = {
   stops: TripMapStop[];
+  compact?: boolean;
 };
 
-export function TripMap({ stops }: TripMapProps) {
+export function TripMap({ stops, compact = false }: TripMapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<Leaflet.Map | null>(null);
   const markersRef = useRef<Leaflet.FeatureGroup | null>(null);
@@ -21,7 +22,7 @@ export function TripMap({ stops }: TripMapProps) {
     void import("leaflet").then((L) => {
       if (disposed || !containerRef.current) return;
 
-      const map = L.map(containerRef.current, { scrollWheelZoom: true, zoomControl: true });
+      const map = L.map(containerRef.current, { scrollWheelZoom: !compact, zoomControl: !compact });
       const tileUrl = process.env.NEXT_PUBLIC_OSM_TILE_URL || "https://tile.openstreetmap.org/{z}/{x}/{y}.png";
       L.tileLayer(tileUrl, {
         maxZoom: 19,
@@ -86,9 +87,9 @@ export function TripMap({ stops }: TripMapProps) {
     markersRef.current = markers;
     if (stops.length === 1) {
       const { lat, lng } = stops[0].place.coordinates;
-      map.setView([lat, lng], 14);
+      map.setView([lat, lng], compact ? 12 : 14);
     } else if (stops.length > 1) {
-      map.fitBounds(markers.getBounds().pad(0.12), { maxZoom: 15 });
+      map.fitBounds(markers.getBounds().pad(0.12), { maxZoom: compact ? 12 : 15 });
     }
 
     return () => {
@@ -97,5 +98,24 @@ export function TripMap({ stops }: TripMapProps) {
     };
   }, [mapReady, stops]);
 
-  return <div ref={containerRef} className="trip-map trip-map-canvas" aria-label="Map of itinerary stops" />;
+  return (
+    <div className="trip-map-host">
+      <div ref={containerRef} className={`trip-map trip-map-canvas${compact ? " trip-map-compact" : ""}`} aria-label="Map of itinerary stops" />
+      {compact && mapReady && (
+        <div className="map-navigation-controls" role="group" aria-label="Map navigation controls">
+          <div className="map-zoom-controls" role="group" aria-label="Zoom map">
+            <button type="button" onClick={() => mapRef.current?.zoomIn()} aria-label="Zoom in" title="Zoom in">+</button>
+            <button type="button" onClick={() => mapRef.current?.zoomOut()} aria-label="Zoom out" title="Zoom out">−</button>
+          </div>
+          <div className="map-pan-controls" role="group" aria-label="Pan map">
+            <button className="map-pan-north" type="button" onClick={() => mapRef.current?.panBy([0, -80], { animate: true })} aria-label="Pan north" title="Pan north">↑</button>
+            <button className="map-pan-west" type="button" onClick={() => mapRef.current?.panBy([-80, 0], { animate: true })} aria-label="Pan west" title="Pan west">←</button>
+            <span className="map-pan-center" aria-hidden="true" />
+            <button className="map-pan-east" type="button" onClick={() => mapRef.current?.panBy([80, 0], { animate: true })} aria-label="Pan east" title="Pan east">→</button>
+            <button className="map-pan-south" type="button" onClick={() => mapRef.current?.panBy([0, 80], { animate: true })} aria-label="Pan south" title="Pan south">↓</button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }

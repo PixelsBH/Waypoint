@@ -16,13 +16,14 @@ type StopCardProps = {
   stop: StopWithId;
   destination: string;
   place?: PlacePreview;
+  isLoadingPlace: boolean;
   index: number;
   count: number;
   onMoveAction: (direction: -1 | 1) => void;
   onRemoveAction: () => void;
 };
 
-export function StopCard({ stop, destination, place, index, count, onMoveAction, onRemoveAction }: StopCardProps) {
+export function StopCard({ stop, destination, place, isLoadingPlace, index, count, onMoveAction, onRemoveAction }: StopCardProps) {
   return (
     <article className="stop-card">
       <div className="stop-index" aria-hidden="true">{String(index + 1).padStart(2, "0")}</div>
@@ -36,10 +37,17 @@ export function StopCard({ stop, destination, place, index, count, onMoveAction,
             </div>
             <h3>{stop.name}</h3>
             {stop.description && <p className="stop-preview">{stop.description}</p>}
+            {isLoadingPlace && (
+              <p className="place-loading" role="status">
+                <span className="place-loading-spinner" aria-hidden="true" />
+                Fetching stop details…
+              </p>
+            )}
             {place && (
               <div className="stop-place-preview">
                 {place.photo && <img className="stop-place-image" src={place.photo.url} alt={`Preview of ${stop.name}`} loading="lazy" />}
                 <div className="stop-place-meta">
+                  <span className="stop-place-label">STOP DETAILS</span>
                   {place.address && <span>{place.address}</span>}
                   <span className="stop-coordinates">{place.coordinates.lat.toFixed(5)}, {place.coordinates.lng.toFixed(5)}</span>
                   <span className="place-attribution">© OpenStreetMap contributors</span>
